@@ -23,13 +23,13 @@ yarn add vue-simple-state
 ## Usage
 
 ```typescript
-import { createStore } from 'vue-simple-state'
+import { simpleStore } from 'vue-simple-state'
 
 // 2. Define initial state factory function
 const initialState = () => ({
   count: 0,
   user: { name: 'John', lastName: 'Doe' },
-  
+
   // Actions: Store is passed as the first argument
   increment(store) {
     store.count++
@@ -45,8 +45,8 @@ const initialState = () => ({
     },
     get fullName() {
       return `${state.user.name} ${state.user.lastName}`
-    }
-  })
+    },
+  }),
 })
 
 // 4. Create store
@@ -94,6 +94,7 @@ pnpm dev
 ```
 
 The example demonstrates:
+
 - Basic state management (Counter)
 - Nested object updates (User Info)
 - Array manipulation (Todos)
