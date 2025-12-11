@@ -24,39 +24,34 @@ yarn add vue-simple-state
 
 ```typescript
 import { simpleStore } from 'vue-simple-state'
+import { ref, computed } from 'vue'
 
-// 2. Define initial state factory function
-const initialState = () => ({
-  count: 0,
-  user: { name: 'John', lastName: 'Doe' },
+const store = simpleStore(() => {
+  // 1. Use Refs for state
+  const count = ref(0)
+  const user = { name: 'John', lastName: 'Doe' } // Plain objects are also fine
 
-  // Actions: Store is passed as the first argument
-  increment(store) {
-    store.count++
-  },
-  add(store, amount) {
-    store.count += amount
-  },
+  // 2. Use Computed for derived state
+  const double = computed(() => count.value * 2)
+  const fullName = computed(() => `${user.name} ${user.lastName}`)
 
-  // 3. Define getters via `getters` property
-  getters: (state) => ({
-    get double() {
-      return state.count * 2
-    },
-    get fullName() {
-      return `${state.user.name} ${state.user.lastName}`
-    },
-  }),
+  // 3. Define Actions
+  function increment() {
+    count.value++
+  }
+
+  return {
+    count,
+    user,
+    double,
+    fullName,
+    increment,
+  }
 })
 
-// 4. Create store
-const store = simpleStore(initialState)
-
-// 5. Use store (it's reactive!)
+// 4. Use store
 store.increment()
-store.add(5)
-console.log(store.double) // 12
-store.user.name = 'Jane'
+console.log(store.double) // 2 (Auto-unwrapped)
 
 // 4. Use helper methods
 store.$reset() // Reset to initial state
