@@ -26,7 +26,9 @@ import { ref } from 'vue'
 
 const useStore = simpleStore(() => {
   const count = ref(0)
-  function increment() { count.value++ }
+  function increment() {
+    count.value++
+  }
   return { count, increment }
 })
 ```
@@ -76,10 +78,12 @@ type SimpleStore<SS> = Reactive<StoreState<SS> & StoreHelpers>
 Every store instance comes with the following helper properties and methods:
 
 #### `$id`
+
 - **Type**: `string`
 - **Description**: A unique identifier for the store. If not provided in the setup return, one is auto-generated.
 
 #### `$state`
+
 - **Type**: `StateTree` (Plain Object)
 - **Description**: Access the entire state as a plain object. Writing to `$state` replaces the entire state (via `$patch`).
 - **Example**:
@@ -89,15 +93,19 @@ Every store instance comes with the following helper properties and methods:
   ```
 
 #### `$patch`
+
 - **Type**: `(partialStateOrMutator: Object | Function) => void`
 - **Description**: Applies a state update. Can be passed an object to merge, or a function to mutate state directly.
 - **Example**:
   ```typescript
   store.$patch({ count: 10 })
-  store.$patch((state) => { state.count++ })
+  store.$patch((state) => {
+    state.count++
+  })
   ```
 
 #### `$update`
+
 - **Type**: `(change: Object | Function) => SimpleStore`
 - **Description**: Similar to `$patch` but designed for functional updates. If a function is passed, it must return the partial state object to merge.
 - **Example**:
@@ -106,35 +114,19 @@ Every store instance comes with the following helper properties and methods:
   ```
 
 #### `$reset`
+
 - **Type**: `() => void`
 - **Description**: Resets the store to its initial state.
 - **Note**: You **must** implement a `$reset` function in your setup function for this to work. If not implemented, calling it will throw an error.
 
 #### `$dispose`
+
 - **Type**: `() => void`
 - **Description**: Stops the effect scope associated with the store. This stops all internal watchers and effects.
 
 #### `$assign`
+
 - **Type**: `(...changes: Object[]) => SimpleStore`
 - **Description**: Merges one or more objects into the state. Used internally by `$patch` and `$update`.
 
 ---
-
-## `stripFunctions` (Utility)
-
-A utility function exported for testing or advanced usage. It recursively removes functions from an object tree while preserving Refs and Arrays.
-
-**Signature:**
-
-```typescript
-function stripFunctions(obj: any): any
-```
-
-**Example:**
-
-```typescript
-import { stripFunctions } from 'vue-simple-state'
-
-const data = { a: 1, fn: () => {} }
-const clean = stripFunctions(data) // { a: 1 }
-```

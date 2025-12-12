@@ -74,43 +74,20 @@ function add() {
 
 ## API Reference
 
+Detailed API documentation is available in [docs/api/README.md](docs/api/README.md).
+
 ### Core Methods
 
 - **`$patch(partialStateOrMutator)`**: Update state.
-
-  ```typescript
-  // Object style
-  store.$patch({ count: store.count + 1 })
-
-  // Function style (Mutation)
-  store.$patch((state) => {
-    state.items.push({ name: 'shoes', quantity: 1 })
-    state.hasChanged = true
-  })
-  ```
-
-- **`$reset()`**: Reset state.
-
-  > **Note**: You must implement the `$reset` function in your setup store. `vue-simple-state` calls your implementation.
-
-- **`$state`**: Access or replace the entire state object (plain object).
-
-  ```typescript
-  // Get snapshot
-  console.log(store.$state)
-
-  // Replace state
-  store.$state = { count: 10, name: 'Alice' }
-  ```
-
-- **`$dispose()`**: Stop the store's effect scope. Useful for cleanup.
+- **`$reset()`**: Reset state (requires implementation).
+- **`$state`**: Access or replace the entire state object.
+- **`$dispose()`**: Stop the store's effect scope.
 
 ### Utilities
 
-- **`storeToRefs(store)`**:
-  Creates an object of references with all the state, getters, and plugin-added state properties of the store. Similar to `toRefs` but ignores methods.
+- **`storeToRefs(store)`**: Destructures state while preserving reactivity.
 
-## Persistence / Subscribing
+## Persistence
 
 Use Vue's native `watch` to subscribe to changes.
 
@@ -120,43 +97,22 @@ import { watch } from 'vue'
 watch(
   () => store.$state,
   (state) => {
-    localStorage.setItem('piniaState', JSON.stringify(state))
+    localStorage.setItem('myState', JSON.stringify(state))
   },
   { deep: true },
 )
 ```
 
-## License
-
-MIT
-
 ## Development
-
-### Project Structure
-
-- `src/`: Core library source code
-- `examples/`: Example applications
-- `dist/`: Build output
 
 ### Scripts
 
-- `pnpm dev`: Start the example application (requires manual cd to examples/vue-demo and run dev currently, or use `vite build --watch` for lib)
 - `pnpm build`: Build the library
+- `pnpm test`: Run tests (Vitest)
+- `pnpm test:coverage`: Run tests with coverage
 - `pnpm lint`: Lint code
 - `pnpm format`: Format code
 
-### Running the Example
+## License
 
-To run the Vue 3 example project:
-
-```bash
-cd examples/vue-demo
-pnpm dev
-```
-
-The example demonstrates:
-
-- Basic state management (Counter)
-- Nested object updates (User Info)
-- Array manipulation (Todos)
-- Helper methods usage ($reset)
+MIT
