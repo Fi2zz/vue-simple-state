@@ -1,13 +1,13 @@
 # API Reference
 
-## `simpleStore`
+## `createStore`
 
 Creates a reactive store using the Setup Store pattern.
 
 **Signature:**
 
 ```typescript
-function simpleStore<T>(setup: () => T): SimpleStore<T>
+function createStore<T>(setup: () => T): SimpleStore<T>
 ```
 
 **Parameters:**
@@ -21,10 +21,10 @@ function simpleStore<T>(setup: () => T): SimpleStore<T>
 **Example:**
 
 ```typescript
-import { simpleStore } from 'vue-simple-store'
+import { createStore } from 'vue-mini-store'
 import { ref } from 'vue'
 
-const useStore = simpleStore(() => {
+const useStore = createStore(() => {
   const count = ref(0)
   function increment() {
     count.value++
@@ -56,7 +56,7 @@ function storeToRefs<SS extends SimpleStore>(store: SS): ToRefs<SS>
 **Example:**
 
 ```typescript
-import { storeToRefs } from 'vue-simple-store'
+import { storeToRefs } from 'vue-mini-store'
 
 const store = useStore
 const { count } = storeToRefs(store)
@@ -67,7 +67,7 @@ const { count } = storeToRefs(store)
 
 ## `SimpleStore` (Interface)
 
-The type of the store instance returned by `simpleStore`. It is an intersection of the user-defined state/actions and the built-in `StoreHelpers`.
+The type of the store instance returned by `createStore`. It is an intersection of the user-defined state/actions and the built-in `StoreHelpers`.
 
 ```typescript
 type SimpleStore<SS> = Reactive<StoreState<SS> & StoreHelpers>

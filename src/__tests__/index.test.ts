@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { computed, isRef, nextTick, reactive, ref, watch } from 'vue'
-import { simpleStore, storeToRefs } from '../index'
+import { createStore, storeToRefs } from '../index'
 
 describe('vue-simple-store', () => {
-  describe('simpleStore', () => {
+  describe('createStore', () => {
     it('should create a store with state and actions', () => {
-      const useStore = simpleStore(() => {
+      const useStore = createStore(() => {
         const count = ref(0)
         const increment = () => count.value++
         return { count, increment }
@@ -17,7 +17,7 @@ describe('vue-simple-store', () => {
     })
 
     it('should support getters (computed)', () => {
-      const useStore = simpleStore(() => {
+      const useStore = createStore(() => {
         const count = ref(1)
         const double = computed(() => count.value * 2)
         return { count, double }
@@ -29,28 +29,28 @@ describe('vue-simple-store', () => {
     })
 
     it('should generate auto ID if not provided', () => {
-      const store1 = simpleStore(() => ({}))
-      const store2 = simpleStore(() => ({}))
+      const store1 = createStore(() => ({}))
+      const store2 = createStore(() => ({}))
       expect(store1.$id).toMatch(/^simple-store-\d+$/)
       expect(store2.$id).not.toBe(store1.$id)
     })
 
     it('should use custom ID if provided', () => {
-      const store = simpleStore(() => ({ $id: 'custom-id', a: 1 }))
+      const store = createStore(() => ({ $id: 'custom-id', a: 1 }))
       expect(store.$id).toBe('custom-id')
       expect(store.a).toBe(1)
     })
 
     it('should throw if setup is not a function', () => {
-      expect(() => simpleStore({} as any)).toThrow('setup must be a function')
+      expect(() => createStore({} as any)).toThrow('setup must be a function')
     })
 
     it('should throw if setup returns non-plain object', () => {
-      expect(() => simpleStore(() => null as any)).toThrow('setup must return a plain object')
+      expect(() => createStore(() => null as any)).toThrow('setup must return a plain object')
     })
 
     it('should strip functions from state but keep them as actions', () => {
-      const store = simpleStore(() => {
+      const store = createStore(() => {
         const count = ref(0)
         const fn = () => {}
         return { count, fn }
@@ -67,7 +67,7 @@ describe('vue-simple-store', () => {
 
   describe('Helpers', () => {
     it('$patch (object)', () => {
-      const store = simpleStore(() => {
+      const store = createStore(() => {
         const count = ref(0)
         const name = ref('a')
         return { count, name }
@@ -79,7 +79,7 @@ describe('vue-simple-store', () => {
     })
 
     it('$patch (function)', () => {
-      const store = simpleStore(() => {
+      const store = createStore(() => {
         const count = ref(0)
         const list = ref<number[]>([])
         return { count, list }
@@ -95,31 +95,31 @@ describe('vue-simple-store', () => {
     })
 
     it('$update (object)', () => {
-      const store = simpleStore(() => ({ a: 1 }))
+      const store = createStore(() => ({ a: 1 }))
       store.$update({ a: 2 })
       expect(store.a).toBe(2)
     })
 
     it('$update (function)', () => {
-      const store = simpleStore(() => ({ a: 1 }))
+      const store = createStore(() => ({ a: 1 }))
       store.$update((state) => ({ a: state.a + 1 }))
       expect(store.a).toBe(2)
     })
 
     it('$update throw on invalid return', () => {
-      const store = simpleStore(() => ({ a: 1 }))
+      const store = createStore(() => ({ a: 1 }))
       expect(() => store.$update(() => null as any)).toThrow(
         'Update function must return a plain object',
       )
     })
 
     it('$reset (default throw)', () => {
-      const store = simpleStore(() => ({ a: 1 }))
+      const store = createStore(() => ({ a: 1 }))
       expect(() => store.$reset()).toThrow('Store does not have a $reset method')
     })
 
     it('$reset (custom)', () => {
-      const store = simpleStore(() => {
+      const store = createStore(() => {
         const a = ref(1)
         const $reset = () => {
           a.value = 0
@@ -134,7 +134,7 @@ describe('vue-simple-store', () => {
 
     it('$dispose', () => {
       let triggered = 0
-      const store = simpleStore(() => {
+      const store = createStore(() => {
         const count = ref(0)
         watch(count, () => triggered++)
         return { count }
@@ -155,7 +155,7 @@ describe('vue-simple-store', () => {
     })
 
     it('$state (getter)', () => {
-      const store = simpleStore(() => {
+      const store = createStore(() => {
         const a = ref(1)
         const b = () => {}
         return { a, b }
@@ -164,7 +164,7 @@ describe('vue-simple-store', () => {
     })
 
     it('$state (setter)', () => {
-      const store = simpleStore(() => {
+      const store = createStore(() => {
         const a = ref(1)
         return { a }
       })
@@ -173,7 +173,7 @@ describe('vue-simple-store', () => {
     })
 
     it('$assign', () => {
-      const store = simpleStore(() => ({ a: 1, b: 2 }))
+      const store = createStore(() => ({ a: 1, b: 2 }))
       store.$assign({ a: 10 })
       expect(store.a).toBe(10)
       expect(store.b).toBe(2)
@@ -182,7 +182,7 @@ describe('vue-simple-store', () => {
 
   describe('Utilities', () => {
     it('storeToRefs', () => {
-      const store = simpleStore(() => {
+      const store = createStore(() => {
         const count = ref(0)
         const name = reactive({ first: 'John' })
         const fn = () => {}

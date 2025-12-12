@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { simpleStore } from 'vue-simple-state'
+import { createStore } from 'vue-simple-state'
 import { computed } from 'vue'
 import { ref } from 'vue'
 
@@ -23,7 +23,7 @@ function initialState() {
 }
 
 // Create store
-const store = simpleStore(initialState)
+const store = createStore(initialState)
 
 // Use store
 const increment = () => {

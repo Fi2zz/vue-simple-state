@@ -11,18 +11,18 @@ interface StoreHelpers {
   $id: string
   $state: StateTree
   $reset: () => void
-  $assign: (...change: Partial<StateTree>[]) => SimpleStore
+  $assign: (...change: Partial<StateTree>[]) => MiniStore
   $patch: (partialStateOrMutator: StatePatchArg) => void
-  $update: (change: StateUpdateArg) => SimpleStore
+  $update: (change: StateUpdateArg) => MiniStore
   $dispose: () => void
   [key: string]: any
 }
 export type SetupStore<T = StateTree> = () => T
 type StoreState<SS> = SS extends () => infer S ? S : never
-export type SimpleStore<SS = SetupStore> = Reactive<StoreState<SS> & StoreHelpers>
+export type MiniStore<SS = SetupStore> = Reactive<StoreState<SS> & StoreHelpers>
 
 let uid = 0
-export function storeToRefs<SS extends SimpleStore>(store: SS) {
+export function storeToRefs<SS extends MiniStore>(store: SS) {
   const refs = {} as any
   for (const key in store) {
     if (key === '$id' || key === '$state') continue
@@ -85,7 +85,7 @@ function stripFunctions(obj: StateTree): StateTree {
   return copy
 }
 
-export function simpleStore<T extends SetupStore>(setup: T): SimpleStore<T> {
+export function createStore<T extends SetupStore>(setup: T): MiniStore<T> {
   if (!isFunction(setup)) throw `setup must be a function`
   const scope = effectScope(true)
   let stateScope: EffectScope
@@ -103,7 +103,7 @@ export function simpleStore<T extends SetupStore>(setup: T): SimpleStore<T> {
   // store id
   let id = setupResult['$id']
   if (!id) id = `simple-store-${uid++}`
-  const state = reactive(base) as unknown as SimpleStore
+  const state = reactive(base) as unknown as MiniStore
   const assign = (...args: PartialStates) => _assign(state, ...args)
   const defaultReset = () => {
     throw new Error(
@@ -152,5 +152,5 @@ export function simpleStore<T extends SetupStore>(setup: T): SimpleStore<T> {
     $reset: actions.$reset ?? makeDescriptor({ value: defaultReset }),
   }
   Object.defineProperties(state, _assign(actions, descriptors))
-  return state as unknown as SimpleStore<T>
+  return state as unknown as MiniStore<T>
 }

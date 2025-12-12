@@ -1,4 +1,4 @@
-# vue-simple-store
+# vue-mini-store
 
 A lightweight, Pinia-like state management library for Vue 3. It provides a simple Setup Store pattern with built-in persistence support and essential helpers.
 
@@ -14,22 +14,22 @@ A lightweight, Pinia-like state management library for Vue 3. It provides a simp
 ## Installation
 
 ```bash
-npm install vue-simple-store
+npm install vue-mini-store
 # or
-pnpm add vue-simple-store
+pnpm add vue-mini-store
 ```
 
 ## Usage
 
 ### 1. Define a Store
 
-`vue-simple-store` uses the **Setup Store** pattern. You define state using `ref` or `reactive`, and actions as regular functions.
+`vue-mini-store` uses the **Setup Store** pattern. You define state using `ref` or `reactive`, and actions as regular functions.
 
 ```typescript
-import { simpleStore } from 'vue-simple-store'
+import { createStore } from 'vue-mini-store'
 import { ref, computed } from 'vue'
 
-export const useCounterStore = simpleStore(() => {
+export const useCounterStore = createStore(() => {
   // State
   const count = ref(0)
   const name = ref('Eduardo')
@@ -55,7 +55,7 @@ export const useCounterStore = simpleStore(() => {
 ```vue
 <script setup>
 import { useCounterStore } from './store'
-import { storeToRefs } from 'vue-simple-store'
+import { storeToRefs } from 'vue-mini-store'
 
 const store = useCounterStore
 
