@@ -1,17 +1,26 @@
 <script setup lang="ts">
 import { simpleStore } from 'vue-simple-state'
 import { computed } from 'vue'
+import { ref } from 'vue'
 
 // Define state initializer
-const initialState = () => ({
-  count: 0,
-  user: {
+function initialState() {
+  const count = ref(0)
+
+  const user = ref({
     name: 'Vue User',
     role: 'developer',
-  },
-  todos: [] as string[],
-  hello() {},
-})
+  })
+  return {
+    count,
+    user,
+    todos: [] as string[],
+    hello() {},
+    $reset() {
+      count.value = 0
+    },
+  }
+}
 
 // Create store
 const store = simpleStore(initialState)

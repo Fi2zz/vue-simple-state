@@ -6,20 +6,22 @@
   "files": [
     "dist"
   ],
-  "main": "./dist/vue-simple-state.umd.js",
+  "main": "./dist/vue-simple-state.js",
   "module": "./dist/vue-simple-state.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/vue-simple-state.js",
-      "require": "./dist/vue-simple-state.umd.js"
+      "import": "./dist/vue-simple-state.js"
     }
   },
   "scripts": {
     "dev": "vite build --watch",
     "dev:example": "vite examples/vue-demo",
     "build": "vue-tsc -b && vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
@@ -34,23 +36,21 @@
   "peerDependencies": {
     "vue": "^3.0.0"
   },
-  "dependencies": {
-    "lodash-es": "^4.17.21"
-  },
   "devDependencies": {
     "@rushstack/eslint-patch": "^1.15.0",
-    "@types/lodash-es": "^4.17.12",
     "@types/node": "^25.0.0",
     "@vitejs/plugin-vue": "^6.0.2",
+    "@vitest/coverage-v8": "^4.0.15",
     "@vue/eslint-config-prettier": "^10.2.0",
     "@vue/eslint-config-typescript": "^14.6.0",
     "eslint": "^9.39.1",
     "eslint-plugin-vue": "^10.6.2",
+    "happy-dom": "^20.0.11",
     "prettier": "^3.7.4",
     "typescript": "^5.9.3",
     "vite": "^7.2.7",
     "vite-plugin-dts": "^4.5.4",
-    "vue": "^3.5.13",
+    "vitest": "^4.0.15",
     "vue-tsc": "^3.1.8"
   }
 }

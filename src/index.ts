@@ -1,230 +1,156 @@
-import {
-  Reactive,
-  reactive,
-  watch,
-  type WatchCallback,
-  type WatchOptions,
-  EffectScope,
-  effectScope,
-  getCurrentScope,
-} from 'vue'
-export type StateMethod = (store: any, ...args: any[]) => any
+import { EffectScope, effectScope, isReactive, isRef, Reactive, reactive, toRef, ToRef } from 'vue'
+
+export type StateMethod = (...args: any[]) => any
 type StateTree = Record<PropertyKey, any>
-type StateModifer = (...change: Partial<StateTree>[]) => SimpleStore
+type PartialStates = Partial<StateTree>[]
 export type StateUpdateFn = (state: StateTree) => Partial<StateTree>
 export type StateUpdateArg = Partial<StateTree> | StateUpdateFn
-export type SubscribeOptions = WatchOptions & {
-  detached?: boolean
-}
-
-type StateHelpers = {
+export type StatePatchFn = (state: StateTree) => void
+export type StatePatchArg = Partial<StateTree> | StatePatchFn
+interface StoreHelpers {
+  $id: string
+  $state: StateTree
   $reset: () => void
-  $assign: StateModifer
+  $assign: (...change: Partial<StateTree>[]) => SimpleStore
+  $patch: (partialStateOrMutator: StatePatchArg) => void
   $update: (change: StateUpdateArg) => SimpleStore
-  $get: <K extends keyof StateTree>(key: K) => StateTree[K]
-  $set: <K extends keyof StateTree>(key: K, value: StateTree[K]) => SimpleStore
-  $keys: () => PropertyKey[]
-  $subscribe: (callback: WatchCallback<any, any>, options?: SubscribeOptions) => () => void
   $dispose: () => void
+  [key: string]: any
 }
-export type Initializer<T = StateTree> = () => T
-interface ActionsOrGettersTree {
-  readonly [key: string]: StateMethod | any
-}
-export type SimpleStore<S = StateTree & ActionsOrGettersTree> = Reactive<
-  (S extends () => infer T
-    ? T & {
-        [K in keyof T]: T[K] extends (store: any, ...args: infer A) => infer R
-          ? (...args: A) => R
-          : T[K]
-      }
-    : S) &
-    StateHelpers
->
-const excludes = ['$reset', '$update', '$get', '$set', '$assign', '$subscribe', '$dispose']
-const getOwnPropertyDescriptors = Object.getOwnPropertyDescriptors
+export type SetupStore<T = StateTree> = () => T
+type StoreState<SS> = SS extends () => infer S ? S : never
+export type SimpleStore<SS = SetupStore> = Reactive<StoreState<SS> & StoreHelpers>
 
-function writableValue(d: PropertyDescriptor) {
-  return d.writable && d.enumerable && d.configurable && typeof d.value !== 'function'
-}
-function writable(object: object) {
-  const _m: any = {}
-  for (const [key, d] of Object.entries(object)) {
-    if (excludes.includes(key)) continue
-    if (writableValue(d)) {
-      _m[key] = d.value
+let uid = 0
+export function storeToRefs<SS extends SimpleStore>(store: SS) {
+  const refs = {} as any
+  for (const key in store) {
+    if (key === '$id' || key === '$state') continue
+    const value = store[key]
+    if (isRef(value) || isReactive(value)) {
+      refs[key] = toRef(store, key)
+    } else if (!isFunction(value)) {
+      refs[key] = toRef(store, key)
     }
   }
-  return _m
+  return refs as {
+    [K in keyof SS]: SS[K] extends Function ? never : ToRef<SS[K]>
+  }
 }
-function readonly(object: object, caller?: any) {
+
+const _toString = Object.prototype.toString
+const _assign = Object.assign
+const getOwnPropertyDescriptors = Object.getOwnPropertyDescriptors
+const hasOwnProperty = Object.prototype.hasOwnProperty
+const isFunction = (val: any): val is Function => typeof val === 'function'
+const isPlainObject = (obj: any) => _toString.call(obj) === '[object Object]'
+function makeActionsDescriptors(setupResult: object) {
+  const object = getOwnPropertyDescriptors(setupResult)
   const pairs: { [x: string]: PropertyDescriptor } = {}
   for (const [key, d] of Object.entries(object)) {
-    if (excludes.includes(key)) continue
-    if (writableValue(d)) continue
-    if (typeof d.value === 'function') {
-      pairs[key] = descriptor({ value: caller(d.value) })
-    }
-    if (typeof d.get !== 'undefined') pairs[key] = descriptor(d)
+    if (!isFunction(d.value)) continue
+    pairs[key] = makeDescriptor({ value: d.value })
   }
-
   return pairs
 }
 
-function descriptor(input: PropertyDescriptor['value']): PropertyDescriptor
-function descriptor(input: PropertyDescriptor): PropertyDescriptor
-function descriptor(config: PropertyDescriptor) {
-  if (typeof config == 'function')
-    return {
-      enumerable: true,
-      configurable: false,
-      value: config,
-    }
+function makeDescriptor(config: PropertyDescriptor): PropertyDescriptor {
+  const enumerable = config.enumerable ?? true
   if (config.value) {
     return {
       writable: false,
-      enumerable: true,
-      configurable: false,
+      enumerable,
+      configurable: true,
       value: config.value,
     }
   }
   return {
-    enumerable: true,
-    configurable: false,
+    enumerable,
+    configurable: true,
     get: config?.get,
     set: config?.set,
   }
 }
 
-type PartialState = Partial<StateTree>
-type PartialStateTree = Partial<StateTree>[]
-
-function isPlainObject(obj: any) {
-  return Object.prototype.toString.call(obj) === '[object Object]'
+function stripFunctions(obj: StateTree): StateTree {
+  if (isRef(obj)) return obj
+  if (Array.isArray(obj)) return obj.map(stripFunctions)
+  if (!isPlainObject(obj)) return obj
+  const copy: any = {}
+  for (const key in obj) {
+    const value = obj[key as keyof typeof obj]
+    if (isFunction(value)) continue
+    copy[key] = stripFunctions(value)
+  }
+  return copy
 }
 
-export function simpleStore<T extends Initializer>(initializer: T): SimpleStore<T> {
-  if (typeof initializer !== 'function') throw `initializer must be a function`
-
+export function simpleStore<T extends SetupStore>(setup: T): SimpleStore<T> {
+  if (!isFunction(setup)) throw `setup must be a function`
   const scope = effectScope(true)
   let stateScope: EffectScope
+  let setupResult: any
 
   function getBaseState() {
-    if (stateScope) stateScope.stop()
     stateScope = effectScope()
     return stateScope.run(() => {
-      const base = (initializer as Function)()
-      if (!isPlainObject(base)) throw `initializer must return a plain object`
-      return base
+      setupResult = (setup as Function)()
+      if (!isPlainObject(setupResult)) throw `setup must return a plain object`
+      return stripFunctions(setupResult)
     })!
   }
-
-  const base = scope.run(() => getBaseState())!
-  const baseDescriptors = getOwnPropertyDescriptors(base)
-  const keySet: Set<PropertyKey> = new Set()
-  const mutable = writable(baseDescriptors)
-  Object.keys(mutable).forEach((key) => keySet.add(key))
-
+  const base = (scope.run(() => getBaseState()) as unknown as StateTree)!
+  // store id
+  let id = setupResult['$id']
+  if (!id) id = `simple-store-${uid++}`
   const state = reactive(base) as unknown as SimpleStore
-
-  function $keys() {
-    return [...keySet]
+  const assign = (...args: PartialStates) => _assign(state, ...args)
+  const defaultReset = () => {
+    throw new Error(
+      '[vue-simple-state] Store does not have a $reset method. Please implement "$reset" in your store initializer to support resetting.',
+    )
   }
-  const _assign = Object.assign
-  const assign = (...args: PartialStateTree) => _assign(state, ...args)
-  const reset = () => {
-    const fresh = scope.run(() => getBaseState())!
-    const data: StateTree = {}
-    // Extract only data properties (including Refs), ignoring functions and getters definition
-    for (const key in fresh) {
-      if (excludes.includes(key)) continue
-      const value = fresh[key]
-      if (typeof value === 'function') continue
-      data[key] = value
-    }
-    assign(data)
-  }
-
   const dispose = () => {
+    stateScope.stop()
     scope.stop()
-    subscriptions.forEach((sub) => sub())
-    subscriptions.length = 0
   }
-
   const update = (p: StateUpdateArg) => {
-    if (typeof p === 'function') {
+    if (isFunction(p)) {
       const part = p(state)
       if (!isPlainObject(part)) throw new Error('Update function must return a plain object')
       return assign(part)
     }
     return assign(p)
   }
-  function set(key: PropertyKey, value: any) {
-    return assign({ [key]: value } as PartialState)
+
+  const patch = (valOrFn: StatePatchArg) => {
+    if (isFunction(valOrFn)) valOrFn(state)
+    else assign(valOrFn)
   }
-  function get(key: PropertyKey) {
-    return (state as StateTree)[key]
+
+  function getState() {
+    // Return plain object snapshot
+    const raw = state as StateTree
+    const data: StateTree = {}
+    for (const key in base) {
+      if (key.startsWith('$')) continue
+      if (hasOwnProperty.call(raw, key) && !isFunction(raw[key])) {
+        data[key] = raw[key]
+      }
+    }
+    return data
   }
-  const caller =
-    (fn: StateMethod) =>
-    (...args: any[]) => {
-      return fn.apply(null, [state, ...args])
-    }
-
-  const subscriptions: (() => void)[] = []
-
-  const subscribe = (callback: WatchCallback<any, any>, options?: SubscribeOptions) => {
-    const detached = options?.detached
-
-    const runWatch = () =>
-      watch(
-        () => {
-          const raw = state as StateTree
-          const data: StateTree = {}
-          for (const key in raw) {
-            if (
-              !excludes.includes(key as string) &&
-              Object.prototype.hasOwnProperty.call(raw, key) &&
-              typeof raw[key] !== 'function'
-            ) {
-              data[key] = raw[key]
-            }
-          }
-          return data
-        },
-        callback,
-        { deep: true, flush: 'sync', ...options },
-      )
-
-    let stop: () => void
-
-    if (detached || !getCurrentScope()) {
-      stop = scope.run(runWatch)!
-    } else {
-      stop = runWatch()
-    }
-
-    subscriptions.push(stop)
-
-    const cleanup = () => {
-      stop()
-      const idx = subscriptions.indexOf(stop)
-      if (idx > -1) subscriptions.splice(idx, 1)
-    }
-
-    return cleanup
-  }
+  const setState = (val: StateTree) => assign(val)
+  const actions = makeActionsDescriptors(setupResult)
   const descriptors: { [x: string]: PropertyDescriptor } = {
-    $assign: descriptor(assign),
-    $update: descriptor(update),
-    $set: descriptor(set),
-    $get: descriptor(get),
-    $reset: descriptor(reset),
-    $keys: descriptor($keys),
-    $subscribe: descriptor(subscribe),
-    $dispose: descriptor(dispose),
+    $id: makeDescriptor({ get: () => id }),
+    $state: makeDescriptor({ enumerable: false, get: getState, set: setState }),
+    $assign: makeDescriptor({ value: assign }),
+    $patch: makeDescriptor({ value: patch }),
+    $update: makeDescriptor({ value: update }),
+    $dispose: makeDescriptor({ value: dispose }),
+    $reset: actions.$reset ?? makeDescriptor({ value: defaultReset }),
   }
-  const d1 = readonly(baseDescriptors, caller)
-  Object.defineProperties(state, _assign(d1, descriptors))
+  Object.defineProperties(state, _assign(actions, descriptors))
   return state as unknown as SimpleStore<T>
 }
