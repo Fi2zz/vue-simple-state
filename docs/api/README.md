@@ -21,7 +21,7 @@ function simpleStore<T>(setup: () => T): SimpleStore<T>
 **Example:**
 
 ```typescript
-import { simpleStore } from 'vue-simple-state'
+import { simpleStore } from 'vue-simple-store'
 import { ref } from 'vue'
 
 const useStore = simpleStore(() => {
@@ -56,7 +56,7 @@ function storeToRefs<SS extends SimpleStore>(store: SS): ToRefs<SS>
 **Example:**
 
 ```typescript
-import { storeToRefs } from 'vue-simple-state'
+import { storeToRefs } from 'vue-simple-store'
 
 const store = useStore
 const { count } = storeToRefs(store)

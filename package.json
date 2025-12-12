@@ -1,6 +1,6 @@
 {
-  "name": "vue-simple-state",
-  "version": "1.0.0",
+  "name": "vue-simple-store",
+  "version": "1.0.1",
   "description": "A simple state management library for Vue 3",
   "type": "module",
   "files": [

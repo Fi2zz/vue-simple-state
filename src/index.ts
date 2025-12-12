@@ -107,7 +107,7 @@ export function simpleStore<T extends SetupStore>(setup: T): SimpleStore<T> {
   const assign = (...args: PartialStates) => _assign(state, ...args)
   const defaultReset = () => {
     throw new Error(
-      '[vue-simple-state] Store does not have a $reset method. Please implement "$reset" in your store initializer to support resetting.',
+      '[vue-simple-store] Store does not have a $reset method. Please implement "$reset" in your store initializer to support resetting.',
     )
   }
   const dispose = () => {

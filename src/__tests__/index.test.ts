@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { computed, isRef, nextTick, reactive, ref, watch } from 'vue'
 import { simpleStore, storeToRefs } from '../index'
 
-describe('vue-simple-state', () => {
+describe('vue-simple-store', () => {
   describe('simpleStore', () => {
     it('should create a store with state and actions', () => {
       const useStore = simpleStore(() => {
