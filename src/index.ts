@@ -55,7 +55,7 @@ function makeActionsDescriptors(setupResult: object) {
 }
 
 function makeDescriptor(config: PropertyDescriptor): PropertyDescriptor {
-  const enumerable = config.enumerable ?? true
+  const enumerable = 'enumerable' in config ? (config.enumerable ?? true) : true
   if (config.value) {
     return {
       writable: false,
